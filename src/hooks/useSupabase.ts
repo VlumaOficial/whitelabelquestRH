@@ -5,7 +5,8 @@ import type {
   CandidateFormData, 
   AssessmentSubmission,
   Candidate,
-  Assessment
+  Assessment,
+  PersonalPresentationData
 } from "@/types/database";
 
 // ============================================
@@ -29,6 +30,20 @@ export function useCandidateByEmail(email: string) {
     queryKey: ['candidate', email],
     queryFn: () => AssessmentService.getCandidateByEmail(email),
     enabled: !!email,
+  });
+}
+
+export function useSavePersonalPresentation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ candidateId, presentationData }: { 
+      candidateId: string; 
+      presentationData: PersonalPresentationData 
+    }) => AssessmentService.savePersonalPresentation(candidateId, presentationData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+    },
   });
 }
 

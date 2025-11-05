@@ -1,8 +1,11 @@
 import MultiStepQuestionnaire from "@/components/MultiStepQuestionnaire";
 import CandidateForm from "@/components/CandidateForm";
+import PersonalPresentationForm from "@/components/PersonalPresentationForm";
 import { Header } from "@/components/layout/Header";
 import { Hero } from "@/components/layout/Hero";
 import { Footer } from "@/components/layout/Footer";
+import { useSavePersonalPresentation } from "@/hooks/useSupabase";
+import type { PersonalPresentationData } from "@/types/database";
 import React, { useState } from "react";
 
 // Definindo o tipo para os dados do candidato
@@ -15,8 +18,11 @@ interface CandidateData {
 }
 
 const Index = () => {
-  const [currentStep, setCurrentStep] = useState<'hero' | 'form' | 'questionnaire'>('hero');
+  const [currentStep, setCurrentStep] = useState<'hero' | 'form' | 'questionnaire' | 'presentation'>('hero');
   const [candidateInfo, setCandidateInfo] = useState<CandidateData | null>(null);
+  const [candidateId, setCandidateId] = useState<string | null>(null);
+
+  const savePersonalPresentation = useSavePersonalPresentation();
 
   const handleStartJourney = () => {
     setCurrentStep('form');
@@ -32,10 +38,37 @@ const Index = () => {
     setCandidateInfo(null);
   };
 
-  const handleQuestionnaireSuccess = () => {
-    // Voltar para a tela principal após sucesso
+  const handleQuestionnaireSuccess = (candidateId: string) => {
+    // Ir para a apresentação pessoal após o questionário
+    setCandidateId(candidateId);
+    setCurrentStep('presentation');
+  };
+
+  const handlePresentationSuccess = () => {
+    // Voltar para a tela principal após sucesso completo
     setCurrentStep('hero');
     setCandidateInfo(null);
+    setCandidateId(null);
+  };
+
+  const handleSkipPresentation = () => {
+    // Permitir pular a apresentação pessoal
+    handlePresentationSuccess();
+  };
+
+  const handlePresentationSubmit = async (data: PersonalPresentationData) => {
+    if (!candidateId) return;
+    
+    try {
+      await savePersonalPresentation.mutateAsync({
+        candidateId,
+        presentationData: data
+      });
+      handlePresentationSuccess();
+    } catch (error) {
+      console.error('Erro ao salvar apresentação pessoal:', error);
+      // Aqui você pode adicionar um toast de erro se necessário
+    }
   };
 
   return (
@@ -88,6 +121,14 @@ const Index = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {currentStep === 'presentation' && candidateInfo && candidateId && (
+          <PersonalPresentationForm
+            candidateName={candidateInfo.name}
+            onSubmit={handlePresentationSubmit}
+            onSkip={handleSkipPresentation}
+          />
         )}
       </main>
 

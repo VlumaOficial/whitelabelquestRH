@@ -8,7 +8,8 @@ import type {
   AssessmentSubmission,
   CandidateSummary,
   SubjectPerformance,
-  AssessmentDetailedReport
+  AssessmentDetailedReport,
+  PersonalPresentationData
 } from "@/types/database";
 
 export class AssessmentService {
@@ -100,6 +101,30 @@ export class AssessmentService {
     if (error && error.code !== 'PGRST116') { // PGRST116 = not found
       console.error('Erro ao buscar candidato:', error);
       throw new Error(`Erro ao buscar candidato: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Salvar apresentação pessoal do candidato
+   */
+  static async savePersonalPresentation(candidateId: string, presentationData: PersonalPresentationData): Promise<Candidate> {
+    const updateData = {
+      ...presentationData,
+      presentation_completed_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('candidates')
+      .update(updateData)
+      .eq('id', candidateId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao salvar apresentação pessoal:', error);
+      throw new Error(`Erro ao salvar apresentação pessoal: ${error.message}`);
     }
 
     return data;

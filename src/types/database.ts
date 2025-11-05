@@ -13,6 +13,18 @@ export interface Candidate {
   preferred_language: string;
   consent_data_processing: boolean;
   consent_marketing: boolean;
+  // Campos de apresentação pessoal
+  personal_presentation?: string;
+  additional_skills?: string;
+  highlighted_soft_skills?: string;
+  relevant_experiences?: string;
+  professional_goals?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
+  github_url?: string;
+  behance_url?: string;
+  instagram_url?: string;
+  presentation_completed_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -118,6 +130,19 @@ export interface CandidateFormData {
   preferred_language?: string;
   consent_data_processing: boolean;
   consent_marketing: boolean;
+}
+
+export interface PersonalPresentationData {
+  personal_presentation?: string;
+  additional_skills?: string;
+  highlighted_soft_skills?: string;
+  relevant_experiences?: string;
+  professional_goals?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
+  github_url?: string;
+  behance_url?: string;
+  instagram_url?: string;
 }
 
 export interface QuestionnaireAnswer {
