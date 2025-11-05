@@ -18,9 +18,6 @@ interface CandidateData {
 }
 
 const Index = () => {
-  console.log("🎯 DEBUG - Index component iniciado");
-  console.log("🎯 DEBUG - PersonalPresentationForm importado:", !!PersonalPresentationForm);
-  
   const [currentStep, setCurrentStep] = useState<'hero' | 'form' | 'questionnaire' | 'presentation'>('hero');
   const [candidateInfo, setCandidateInfo] = useState<CandidateData | null>(null);
   const [candidateId, setCandidateId] = useState<string | null>(null);
@@ -42,16 +39,9 @@ const Index = () => {
   };
 
   const handleQuestionnaireSuccess = (candidateId: string) => {
-    console.log("🎯 DEBUG - handleQuestionnaireSuccess chamado!");
-    console.log("🎯 DEBUG - candidateId recebido:", candidateId);
-    console.log("🎯 DEBUG - candidateInfo atual:", candidateInfo);
-    
     // Ir para a apresentação pessoal após o questionário
     setCandidateId(candidateId);
     setCurrentStep('presentation');
-    
-    console.log("🎯 DEBUG - Estado atualizado para 'presentation'");
-    console.log("🎯 DEBUG - candidateId salvo:", candidateId);
   };
 
   const handlePresentationSuccess = () => {
@@ -134,24 +124,12 @@ const Index = () => {
         )}
 
         {currentStep === 'presentation' && candidateInfo && candidateId && (
-          <>
-            {console.log("🎯 DEBUG - Renderizando PersonalPresentationForm")}
-            {console.log("🎯 DEBUG - currentStep:", currentStep)}
-            {console.log("🎯 DEBUG - candidateInfo:", candidateInfo)}
-            {console.log("🎯 DEBUG - candidateId:", candidateId)}
-            <PersonalPresentationForm
-              candidateName={candidateInfo.name}
-              onSubmit={handlePresentationSubmit}
-              onSkip={handleSkipPresentation}
-            />
-          </>
+          <PersonalPresentationForm
+            candidateName={candidateInfo.name}
+            onSubmit={handlePresentationSubmit}
+            onSkip={handleSkipPresentation}
+          />
         )}
-        
-        {/* DEBUG - Mostrar estado atual */}
-        {console.log("🎯 DEBUG - Estado atual do Index:")}
-        {console.log("🎯 DEBUG - currentStep:", currentStep)}
-        {console.log("🎯 DEBUG - candidateInfo existe:", !!candidateInfo)}
-        {console.log("🎯 DEBUG - candidateId existe:", !!candidateId)}
       </main>
 
       {currentStep === 'hero' && <Footer />}

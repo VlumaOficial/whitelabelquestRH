@@ -363,8 +363,6 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
       };
 
       const candidate = await createCandidate.mutateAsync(candidateData);
-      console.log("🎯 DEBUG - Candidato criado:", candidate);
-      console.log("🎯 DEBUG - Candidate ID:", candidate.id);
 
       // 2. Converter respostas do questionário para o novo formato
       const answers: QuestionnaireAnswer[] = [];
@@ -412,13 +410,8 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
       
       // Aguardar um pouco para o usuário ver as mensagens, depois redirecionar
       setTimeout(() => {
-        console.log("🎯 DEBUG - Chamando onSuccess com candidateId:", candidate.id);
-        console.log("🎯 DEBUG - onSuccess function exists:", !!onSuccess);
         if (onSuccess) {
           onSuccess(candidate.id);
-          console.log("🎯 DEBUG - onSuccess chamado com sucesso!");
-        } else {
-          console.log("❌ DEBUG - onSuccess não existe!");
         }
       }, 3000); // 3 segundos total para ler as mensagens
       

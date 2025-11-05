@@ -83,7 +83,7 @@ export function Footer() {
               className="flex items-center gap-2 hover:text-foreground transition-colors group"
             >
               <img 
-                src="/logo.png" 
+                src="/vluma-logo.svg" 
                 alt="Vluma" 
                 className="h-6 w-auto opacity-70 group-hover:opacity-100 transition-opacity"
               />
