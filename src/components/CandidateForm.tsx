@@ -130,7 +130,15 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onFormSubmitSuccess }) =>
                   <FormItem>
                     <FormLabel className="text-foreground">Tempo de Experiência (anos)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={event => field.onChange(parseFloat(event.target.value))} />
+                      <Input 
+                        type="number" 
+                        placeholder="0" 
+                        {...field} 
+                        onChange={event => {
+                          const value = event.target.value;
+                          field.onChange(value === '' ? 0 : parseFloat(value) || 0);
+                        }} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

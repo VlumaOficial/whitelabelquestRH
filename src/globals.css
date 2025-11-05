@@ -46,11 +46,17 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Cores Inclusivas */
-    --inclusive-purple: 270 60% 70%; /* Lilás/Roxo para igualdade de gênero */
-    --inclusive-orange: 30 80% 60%; /* Laranja para deficiência intelectual */
-    --inclusive-yellow: 50 90% 70%; /* Amarelo para deficiência intelectual/neurodiversidade */
-    --inclusive-blue: 200 70% 50%; /* Azul para neurodiversidade/autismo */
+    /* Cores Inclusivas - Representando Diversos Grupos */
+    --inclusive-purple: 270 60% 70%; /* Lilás/Roxo - LGBTQIA+ e igualdade de gênero */
+    --inclusive-orange: 30 80% 60%; /* Laranja - Deficiência intelectual e TDAH */
+    --inclusive-yellow: 50 90% 70%; /* Amarelo - Neurodiversidade e deficiência intelectual */
+    --inclusive-blue: 200 70% 50%; /* Azul - Autismo e deficiência auditiva */
+    --inclusive-green: 140 60% 50%; /* Verde - Saúde mental e bem-estar */
+    --inclusive-pink: 330 70% 70%; /* Rosa - Câncer de mama e empoderamento feminino */
+    --inclusive-teal: 180 60% 50%; /* Turquesa - Síndrome de Tourette e ansiedade */
+    --inclusive-red: 0 70% 60%; /* Vermelho - HIV/AIDS awareness e deficiência física */
+    --inclusive-silver: 220 10% 70%; /* Prata/Cinza - Idosos e envelhecimento ativo */
+    --inclusive-gold: 45 80% 60%; /* Dourado - Deficiência visual e conquistas */
   }
 
   .dark {
@@ -94,11 +100,17 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Cores Inclusivas (Dark Mode) */
-    --inclusive-purple: 270 60% 50%; /* Lilás/Roxo para igualdade de gênero */
-    --inclusive-orange: 30 80% 40%; /* Laranja para deficiência intelectual */
-    --inclusive-yellow: 50 90% 50%; /* Amarelo para deficiência intelectual/neurodiversidade */
-    --inclusive-blue: 200 70% 70%; /* Azul para neurodiversidade/autismo */
+    /* Cores Inclusivas (Dark Mode) - Representando Diversos Grupos */
+    --inclusive-purple: 270 60% 50%; /* Lilás/Roxo - LGBTQIA+ e igualdade de gênero */
+    --inclusive-orange: 30 80% 40%; /* Laranja - Deficiência intelectual e TDAH */
+    --inclusive-yellow: 50 90% 50%; /* Amarelo - Neurodiversidade e deficiência intelectual */
+    --inclusive-blue: 200 70% 70%; /* Azul - Autismo e deficiência auditiva */
+    --inclusive-green: 140 60% 40%; /* Verde - Saúde mental e bem-estar */
+    --inclusive-pink: 330 70% 50%; /* Rosa - Câncer de mama e empoderamento feminino */
+    --inclusive-teal: 180 60% 40%; /* Turquesa - Síndrome de Tourette e ansiedade */
+    --inclusive-red: 0 70% 50%; /* Vermelho - HIV/AIDS awareness e deficiência física */
+    --inclusive-silver: 220 10% 60%; /* Prata/Cinza - Idosos e envelhecimento ativo */
+    --inclusive-gold: 45 80% 50%; /* Dourado - Deficiência visual e conquistas */
   }
 }
 
@@ -109,5 +121,130 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-purple-500 ring-offset-2 ring-offset-background;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  /* Inclusive button variants - Representando Diversos Grupos */
+  .btn-inclusive-purple {
+    @apply bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white;
+  }
+
+  .btn-inclusive-orange {
+    @apply bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white;
+  }
+
+  .btn-inclusive-blue {
+    @apply bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white;
+  }
+
+  .btn-inclusive-green {
+    @apply bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white;
+  }
+
+  .btn-inclusive-pink {
+    @apply bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white;
+  }
+
+  .btn-inclusive-teal {
+    @apply bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white;
+  }
+
+  .btn-inclusive-red {
+    @apply bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white;
+  }
+
+  .btn-inclusive-gold {
+    @apply bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white;
+  }
+
+  /* Gradient text utilities */
+  .text-gradient-purple {
+    @apply bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-inclusive {
+    @apply bg-gradient-to-r from-purple-600 via-blue-600 to-orange-500 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-diversity {
+    @apply bg-gradient-to-r from-purple-500 via-pink-500 via-blue-500 via-green-500 to-orange-500 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-rainbow {
+    @apply bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .animate-bounce-gentle {
+    animation: bounceGentle 2s infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceGentle {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(-3px);
   }
 }

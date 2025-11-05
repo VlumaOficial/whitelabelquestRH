@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/use-toast";
 import { questionnaireSchema, QuestionnaireSchema } from "@/schemas/questionnaireSchema";
-import { supabase } from "@/integrations/supabase/client"; // Importação corrigida
+import { useCreateCandidate, useSubmitAssessment, useActiveSubjects } from "@/hooks/useSupabase";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
+import type { CandidateFormData, AssessmentSubmission, QuestionnaireAnswer } from "@/types/database";
 
 // Import all step components
 import BrandingRebrandingStep from "@/components/form-steps/BrandingRebrandingStep";
@@ -41,16 +42,16 @@ const steps = [
 ];
 
 // Definindo o tipo para os dados do candidato
-interface CandidateData {
-  name: string;
-  email: string;
-  phone: string;
-  areaOfExpertise: string;
-  yearsOfExperience: number;
-}
-
 interface MultiStepQuestionnaireProps {
-  candidateInfo: CandidateData | null;
+  candidateInfo: {
+    name: string;
+    email: string;
+    phone: string;
+    areaOfExpertise: string;
+    yearsOfExperience: number;
+  };
+  onBack?: () => void;
+  onSuccess?: () => void;
 }
 
 // Gerando valores padrão baseados no esquema atualizado
@@ -276,9 +277,14 @@ const defaultValues: QuestionnaireSchema = {
 };
 
 
-const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candidateInfo }) => {
+const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candidateInfo, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [isReviewing, setIsReviewing] = useState(false); 
+  const [isReviewing, setIsReviewing] = useState(false);
+
+  // Scroll para o topo quando mudar de step
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]); 
   
   const methods = useForm<QuestionnaireSchema>({
     resolver: zodResolver(questionnaireSchema),
@@ -296,34 +302,29 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
   const handleNext = async () => {
     const currentStepId = steps[currentStep].id;
     
-    // Se for o passo de resumo, submete
-    if (currentStepId === "summary") {
-      methods.handleSubmit(onSubmit)();
-      return;
-    }
-
-    // Validação da etapa atual
-    const isValid = await methods.trigger(currentStepId as keyof QuestionnaireSchema, { shouldFocus: true });
-
-    if (isValid) {
-      if (isReviewing) {
-        // Se estiver revisando, volta diretamente para o resumo (última etapa)
-        setCurrentStep(totalSteps - 1);
-        setIsReviewing(false); // Desativa o modo de revisão após o retorno
-      } else if (currentStep < totalSteps - 1) {
-        // Se não estiver revisando, avança normalmente
-        setCurrentStep((prev) => prev + 1);
-      } else {
-        // Última etapa sequencial antes do resumo (se houver)
-        methods.handleSubmit(onSubmit)();
+    // Validação da etapa atual (exceto para o resumo)
+    if (currentStepId !== "summary") {
+      const isValid = await methods.trigger(currentStepId as keyof QuestionnaireSchema, { shouldFocus: true });
+      
+      if (!isValid) {
+        toast({
+          title: "Erro de validação",
+          description: "Por favor, preencha todos os campos obrigatórios antes de continuar.",
+          variant: "destructive",
+        });
+        return;
       }
-    } else {
-      toast({
-        title: "Erro de validação",
-        description: "Por favor, preencha todos os campos obrigatórios antes de continuar.",
-        variant: "destructive",
-      });
     }
+
+    if (isReviewing) {
+      // Se estiver revisando, volta diretamente para o resumo (última etapa)
+      setCurrentStep(totalSteps - 1);
+      setIsReviewing(false); // Desativa o modo de revisão após o retorno
+    } else if (currentStep < totalSteps - 1) {
+      // Se não estiver revisando, avança normalmente
+      setCurrentStep((prev) => prev + 1);
+    }
+    // REMOVIDO: Não submete automaticamente na última etapa
   };
 
   const handleBack = () => {
@@ -336,6 +337,11 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
     }
   };
 
+  // Hooks para o novo sistema
+  const createCandidate = useCreateCandidate();
+  const submitAssessment = useSubmitAssessment();
+  const { data: subjects } = useActiveSubjects();
+
   const onSubmit = async (data: QuestionnaireSchema) => {
     if (!candidateInfo) {
       showError("Erro: Informações do candidato não encontradas. Por favor, recomece.");
@@ -344,48 +350,146 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
 
     const loadingToastId = showLoading("Enviando questionário...");
 
-    const submissionData = {
-      candidate_name: candidateInfo.name,
-      candidate_email: candidateInfo.email,
-      candidate_phone: candidateInfo.phone,
-      candidate_area_of_expertise: candidateInfo.areaOfExpertise,
-      candidate_years_of_experience: candidateInfo.yearsOfExperience,
-      data: data, // O objeto JSONB completo do questionário
-    };
+    try {
+      // 1. Criar/buscar candidato
+      const candidateData: CandidateFormData = {
+        email: candidateInfo.email,
+        full_name: candidateInfo.name,
+        phone: candidateInfo.phone,
+        education_level: candidateInfo.areaOfExpertise,
+        experience_years: candidateInfo.yearsOfExperience,
+        consent_data_processing: true,
+        consent_marketing: false
+      };
 
-    const { error } = await supabase
-      .from('questionnaires')
-      .insert([submissionData]);
+      const candidate = await createCandidate.mutateAsync(candidateData);
 
-    dismissToast(loadingToastId);
+      // 2. Converter respostas do questionário para o novo formato
+      const answers: QuestionnaireAnswer[] = [];
+      let questionNumber = 1;
 
-    if (error) {
-      console.error("Erro ao salvar no Supabase:", error);
-      showError("Erro ao finalizar o questionário. Tente novamente.");
-    } else {
-      showSuccess("Questionário enviado com sucesso! Agradecemos sua participação.");
-      // Opcional: Redirecionar ou limpar o formulário
+      // Mapear cada seção do questionário para respostas
+      Object.entries(data).forEach(([sectionKey, sectionData]) => {
+        if (typeof sectionData === 'object' && sectionData !== null) {
+          Object.entries(sectionData).forEach(([questionKey, answer]) => {
+            // Encontrar a matéria correspondente (mapear seções para matérias)
+            const subjectName = mapSectionToSubject(sectionKey);
+            const subject = subjects?.find(s => s.name === subjectName);
+            
+            if (subject && answer !== undefined) {
+              answers.push({
+                subject_id: subject.id,
+                question_number: questionNumber++,
+                question_text: `${sectionKey}: ${questionKey}`,
+                answer_value: String(answer),
+                answer_score: typeof answer === 'number' ? answer : 0,
+                is_correct: typeof answer === 'number' ? answer > 0 : true,
+                time_spent_seconds: 30 // Estimativa
+              });
+            }
+          });
+        }
+      });
+
+      // 3. Submeter avaliação
+      const assessmentData: AssessmentSubmission = {
+        candidate_id: candidate.id,
+        answers: answers,
+        time_spent_minutes: Math.ceil(answers.length * 0.5), // Estimativa
+      };
+
+      await submitAssessment.mutateAsync(assessmentData);
+
+      dismissToast(loadingToastId);
+      showSuccess("🎉 Questionário enviado com sucesso! Agradecemos sua participação.");
+      
+      // Mostrar mensagem adicional de agradecimento
+      setTimeout(() => {
+        showSuccess("✨ Redirecionando para a página inicial...");
+      }, 1500);
+      
+      // Aguardar um pouco para o usuário ver as mensagens, depois redirecionar
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, 3000); // 3 segundos total para ler as mensagens
+      
+    } catch (error: any) {
+      dismissToast(loadingToastId);
+      console.error("Erro ao salvar questionário:", error);
+      
+      // Mensagem de erro mais específica
+      let errorMessage = "Erro ao finalizar o questionário. Tente novamente.";
+      
+      if (error.message?.includes('ERR_CONNECTION_CLOSED') || error.message?.includes('network')) {
+        errorMessage = "Problema de conexão. Verifique sua internet e tente novamente.";
+      } else if (error.message?.includes('duplicate key')) {
+        errorMessage = "Dados já existem. Tentando atualizar...";
+      }
+      
+      showError(errorMessage);
     }
+  };
+
+  // Função para mapear seções do questionário para matérias do banco
+  const mapSectionToSubject = (sectionKey: string): string => {
+    const mapping: Record<string, string> = {
+      'brandingRebranding': 'Criatividade',
+      'copywriting': 'Comunicação',
+      'redacao': 'Comunicação',
+      'arteDesign': 'Criatividade',
+      'midiaSocial': 'Comunicação',
+      'landingPages': 'Conhecimento Técnico',
+      'publicidade': 'Comunicação',
+      'marketing': 'Conhecimento Técnico',
+      'tecnologiaAutomacoes': 'Conhecimento Técnico',
+      'habilidadesComplementares': 'Adaptabilidade',
+      'softSkills': 'Inteligência Emocional'
+    };
+    
+    return mapping[sectionKey] || 'Raciocínio Lógico';
   };
 
   const CurrentStepComponent = steps[currentStep].component;
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={methods.handleSubmit(onSubmit)} className="w-full max-w-2xl space-y-6 p-4">
-        <Progress value={progress} className="w-full h-2 bg-inclusive-purple/20 [&>div]:bg-inclusive-purple" />
-        <div className="text-center text-sm text-muted-foreground">
-          Etapa {currentStep + 1} de {totalSteps}: {steps[currentStep].name}
+      <div className="w-full max-w-2xl mx-auto">
+        {/* Progress Header */}
+        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-6 mb-8">
+          <div className="space-y-4">
+            <Progress 
+              value={progress} 
+              className="w-full h-3 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-blue-500" 
+            />
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Etapa {currentStep + 1} de {totalSteps}
+              </span>
+              <span className="font-medium text-foreground">
+                {steps[currentStep].name}
+              </span>
+              <span className="text-muted-foreground">
+                {Math.round(progress)}% concluído
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Renderiza o componente do passo atual, passando a função de navegação se for o SummaryStep */}
-        {steps[currentStep].id === "summary" ? (
-          <SummaryStep onNavigateToStep={handleNavigateToStep} />
-        ) : (
-          <CurrentStepComponent />
-        )}
+        {/* Form Content */}
+        <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-8">
+          <div className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-xl p-8 md:p-12">
+            {/* Renderiza o componente do passo atual */}
+            {steps[currentStep].id === "summary" ? (
+              <SummaryStep onNavigateToStep={handleNavigateToStep} />
+            ) : (
+              <CurrentStepComponent />
+            )}
+          </div>
 
-        <div className="flex justify-between mt-6">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center bg-card/30 backdrop-blur-sm border border-border/50 rounded-xl p-6">
           {currentStep > 0 && currentStep !== totalSteps - 1 && (
             <Button
               type="button"
@@ -396,15 +500,16 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
               Voltar
             </Button>
           )}
-          <Button
-            type={currentStep === totalSteps - 1 ? "submit" : "button"}
-            onClick={handleNext}
-            className="ml-auto bg-inclusive-orange text-inclusive-orange-foreground hover:bg-inclusive-orange/90"
-          >
-            {currentStep === totalSteps - 1 ? "Finalizar Questionário" : (isReviewing ? "Voltar ao Resumo" : "Próximo")}
-          </Button>
-        </div>
-      </form>
+            <Button
+              type="button"
+              onClick={currentStep === totalSteps - 1 ? methods.handleSubmit(onSubmit) : handleNext}
+              className="ml-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+            >
+              {currentStep === totalSteps - 1 ? "Finalizar Questionário" : (isReviewing ? "Voltar ao Resumo" : "Próximo")}
+            </Button>
+          </div>
+        </form>
+      </div>
     </FormProvider>
   );
 };
