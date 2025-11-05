@@ -235,8 +235,11 @@ export class AssessmentService {
    */
   static async submitAssessment(submission: AssessmentSubmission): Promise<Assessment> {
     try {
+      console.log('🔧 DEBUG - Iniciando submitAssessment para candidate:', submission.candidate_id);
+      
       // 1. Iniciar transação - criar avaliação
       const assessment = await this.startAssessment(submission.candidate_id);
+      console.log('🔧 DEBUG - Assessment criado:', assessment.id);
 
       // 2. Salvar todas as respostas
       const answersToInsert = submission.answers.map(answer => ({
@@ -255,19 +258,24 @@ export class AssessmentService {
         .insert(answersToInsert);
 
       if (answersError) {
+        console.log('🔧 DEBUG - Erro ao salvar respostas:', answersError);
         throw new Error(`Erro ao salvar respostas: ${answersError.message}`);
       }
+      console.log('🔧 DEBUG - Respostas salvas com sucesso');
 
       // 3. Calcular scores usando a função do banco
       const { data: scoreData, error: scoreError } = await supabase
         .rpc('calculate_assessment_score', { assessment_uuid: assessment.id });
 
       if (scoreError) {
-        console.error('Erro ao calcular score:', scoreError);
+        console.error('🔧 DEBUG - Erro ao calcular score:', scoreError);
+      } else {
+        console.log('🔧 DEBUG - Score calculado:', scoreData);
       }
 
       const totalScore = scoreData?.[0]?.total_score || 0;
       const percentageScore = scoreData?.[0]?.percentage_score || 0;
+      console.log('🔧 DEBUG - Scores finais:', { totalScore, percentageScore });
 
       // 4. Atualizar avaliação com scores e status completo
       const { data: updatedAssessment, error: updateError } = await supabase
@@ -283,9 +291,11 @@ export class AssessmentService {
         .select();
 
       if (updateError) {
+        console.log('🔧 DEBUG - Erro ao atualizar assessment:', updateError);
         throw new Error(`Erro ao finalizar avaliação: ${updateError.message}`);
       }
 
+      console.log('🔧 DEBUG - Assessment finalizado com sucesso:', updatedAssessment?.[0]);
       return updatedAssessment?.[0] || assessment;
 
     } catch (error) {
