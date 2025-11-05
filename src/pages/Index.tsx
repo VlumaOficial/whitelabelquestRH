@@ -2,10 +2,21 @@ import MultiStepQuestionnaire from "@/components/MultiStepQuestionnaire";
 import CandidateForm from "@/components/CandidateForm";
 import React, { useState } from "react";
 
+// Definindo o tipo para os dados do candidato
+interface CandidateData {
+  name: string;
+  email: string;
+  phone: string;
+  areaOfExpertise: string;
+  yearsOfExperience: number;
+}
+
 const Index = () => {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [candidateInfo, setCandidateInfo] = useState<CandidateData | null>(null);
 
-  const handleCandidateFormSubmit = () => {
+  const handleCandidateFormSubmit = (data: CandidateData) => {
+    setCandidateInfo(data);
     setShowQuestionnaire(true);
   };
 
@@ -14,7 +25,7 @@ const Index = () => {
       {!showQuestionnaire ? (
         <CandidateForm onFormSubmitSuccess={handleCandidateFormSubmit} />
       ) : (
-        <MultiStepQuestionnaire />
+        <MultiStepQuestionnaire candidateInfo={candidateInfo} />
       )}
     </div>
   );

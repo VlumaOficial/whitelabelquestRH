@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/use-toast";
 import { questionnaireSchema, QuestionnaireSchema } from "@/schemas/questionnaireSchema";
+import { createClient } from "@/integrations/supabase/client";
+import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 
 // Import all step components
 import BrandingRebrandingStep from "@/components/form-steps/BrandingRebrandingStep";
@@ -38,26 +40,18 @@ const steps = [
   { id: "summary", name: "Resumo", component: SummaryStep },
 ];
 
-// Helper para criar valores padrão 1 para todos os campos aninhados
-const createDefaultValues = (schema: z.ZodTypeAny): any => {
-  if (schema instanceof z.ZodObject) {
-    return Object.fromEntries(
-      Object.entries(schema.shape).map(([key, value]) => [
-        key,
-        createDefaultValues(value as z.ZodTypeAny),
-      ])
-    );
-  }
-  // Se for um número (slider), o default é 1.
-  if (schema instanceof z.ZodNumber) {
-    return 1;
-  }
-  // Se for um booleano (não deve mais existir, mas por segurança)
-  if (schema instanceof z.ZodBoolean) {
-    return false;
-  }
-  return undefined;
-};
+// Definindo o tipo para os dados do candidato
+interface CandidateData {
+  name: string;
+  email: string;
+  phone: string;
+  areaOfExpertise: string;
+  yearsOfExperience: number;
+}
+
+interface MultiStepQuestionnaireProps {
+  candidateInfo: CandidateData | null;
+}
 
 // Gerando valores padrão baseados no esquema atualizado
 const defaultValues: QuestionnaireSchema = {
@@ -281,10 +275,10 @@ const defaultValues: QuestionnaireSchema = {
   },
 };
 
+const supabase = createClient();
 
-const MultiStepQuestionnaire: React.FC = () => {
+const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candidateInfo }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  // Novo estado para rastrear se estamos no modo de revisão
   const [isReviewing, setIsReviewing] = useState(false); 
   
   const methods = useForm<QuestionnaireSchema>({
@@ -295,7 +289,6 @@ const MultiStepQuestionnaire: React.FC = () => {
   const totalSteps = steps.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;
 
-  // Função de navegação que define se estamos revisando
   const handleNavigateToStep = (stepIndex: number, reviewMode: boolean) => {
     setCurrentStep(stepIndex);
     setIsReviewing(reviewMode);
@@ -344,17 +337,36 @@ const MultiStepQuestionnaire: React.FC = () => {
     }
   };
 
-  const onSubmit = (data: QuestionnaireSchema) => {
-    console.log("Formulário Completo:", data);
-    toast({
-      title: "Questionário enviado com sucesso!",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4 overflow-auto max-h-96">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-    // Aqui você pode enviar os dados para um backend ou processá-los
+  const onSubmit = async (data: QuestionnaireSchema) => {
+    if (!candidateInfo) {
+      showError("Erro: Informações do candidato não encontradas. Por favor, recomece.");
+      return;
+    }
+
+    const loadingToastId = showLoading("Enviando questionário...");
+
+    const submissionData = {
+      candidate_name: candidateInfo.name,
+      candidate_email: candidateInfo.email,
+      candidate_phone: candidateInfo.phone,
+      candidate_area_of_expertise: candidateInfo.areaOfExpertise,
+      candidate_years_of_experience: candidateInfo.yearsOfExperience,
+      data: data, // O objeto JSONB completo do questionário
+    };
+
+    const { error } = await supabase
+      .from('questionnaires')
+      .insert([submissionData]);
+
+    dismissToast(loadingToastId);
+
+    if (error) {
+      console.error("Erro ao salvar no Supabase:", error);
+      showError("Erro ao finalizar o questionário. Tente novamente.");
+    } else {
+      showSuccess("Questionário enviado com sucesso! Agradecemos sua participação.");
+      // Opcional: Redirecionar ou limpar o formulário
+    }
   };
 
   const CurrentStepComponent = steps[currentStep].component;

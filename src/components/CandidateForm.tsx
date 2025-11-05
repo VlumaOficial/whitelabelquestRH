@@ -34,12 +34,14 @@ const formSchema = z.object({
   }),
 });
 
+type CandidateFormData = z.infer<typeof formSchema>;
+
 interface CandidateFormProps {
-  onFormSubmitSuccess: () => void;
+  onFormSubmitSuccess: (data: CandidateFormData) => void;
 }
 
 const CandidateForm: React.FC<CandidateFormProps> = ({ onFormSubmitSuccess }) => {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<CandidateFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -50,13 +52,13 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onFormSubmitSuccess }) =>
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: CandidateFormData) {
     console.log("Dados do Candidato:", values);
     toast({
       title: "Informações do candidato enviadas!",
       description: "Agora, por favor, preencha o questionário de habilidades.",
     });
-    onFormSubmitSuccess(); // Chama o callback para avançar para o próximo formulário
+    onFormSubmitSuccess(values); // Chama o callback para avançar para o próximo formulário, passando os dados
   }
 
   return (
