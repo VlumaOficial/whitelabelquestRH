@@ -278,6 +278,15 @@ export class AssessmentService {
       console.log('🔧 DEBUG - Scores finais:', { totalScore, percentageScore });
 
       // 4. Atualizar avaliação com scores e status completo
+      console.log('🔧 DEBUG - Tentando atualizar assessment:', assessment.id);
+      console.log('🔧 DEBUG - Dados para update:', {
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        total_score: totalScore,
+        percentage_score: percentageScore,
+        time_spent_minutes: submission.time_spent_minutes
+      });
+      
       const { data: updatedAssessment, error: updateError } = await supabase
         .from('assessments')
         .update({
@@ -289,6 +298,8 @@ export class AssessmentService {
         })
         .eq('id', assessment.id)
         .select();
+        
+      console.log('🔧 DEBUG - Resultado do update:', { data: updatedAssessment, error: updateError });
 
       if (updateError) {
         console.log('🔧 DEBUG - Erro ao atualizar assessment:', updateError);
