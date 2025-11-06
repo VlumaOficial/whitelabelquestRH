@@ -318,23 +318,63 @@ export class AssessmentService {
   static async getAssessmentAnswers(assessmentId: string) {
     console.log('🔧 DEBUG - Buscando respostas para assessment:', assessmentId);
     
+    // Primeiro, verificar se o assessment existe
+    const { data: assessment } = await supabase
+      .from('assessments')
+      .select('id, status, completed_at, candidate_id')
+      .eq('id', assessmentId)
+      .single();
+    
+    console.log('🔧 DEBUG - Assessment encontrado:', assessment);
+    
+    // Buscar todas as respostas
     const { data, error } = await supabase
       .from('assessment_answers')
-      .select('*')
+      .select(`
+        *,
+        questions (
+          id,
+          question_text,
+          subject_id,
+          subjects (
+            name
+          )
+        )
+      `)
       .eq('assessment_id', assessmentId)
       .order('question_number', { ascending: true });
 
     if (error) {
-      console.error('Erro ao buscar respostas do assessment:', error);
-      throw new Error(`Erro ao buscar respostas: ${error.message}`);
+      console.error('❌ Erro ao buscar respostas do assessment:', error);
+      
+      // Fallback: tentar query simples
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('assessment_answers')
+        .select('*')
+        .eq('assessment_id', assessmentId)
+        .order('question_number', { ascending: true });
+        
+      if (simpleError) {
+        throw new Error(`Erro ao buscar respostas: ${simpleError.message}`);
+      }
+      
+      console.log('🔧 DEBUG - Fallback - Respostas encontradas:', simpleData?.length || 0);
+      
+      return simpleData?.map(answer => ({
+        ...answer,
+        subject_name: 'Competências Gerais',
+        question_text: `Questão ${answer.question_number}`
+      })) || [];
     }
 
     console.log('🔧 DEBUG - Respostas encontradas:', data?.length || 0);
+    console.log('🔧 DEBUG - Primeira resposta:', data?.[0]);
     
-    // Mapear para incluir o nome da matéria (simplificado)
+    // Mapear com dados das questões
     return data?.map(answer => ({
       ...answer,
-      subject_name: 'Competências Gerais' // Nome fixo por enquanto
+      subject_name: answer.questions?.subjects?.name || 'Competências Gerais',
+      question_text: answer.questions?.question_text || `Questão ${answer.question_number}`
     })) || [];
   }
 
