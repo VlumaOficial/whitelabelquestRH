@@ -50,6 +50,9 @@ export default function AdminDashboard() {
   const { data: subjectPerformance, isLoading: loadingSubjects } = useSubjectPerformanceReport();
   const { data: dbHealth } = useDatabaseHealth();
   const { data: candidateAssessments, isLoading: loadingAssessments } = useCandidateAssessments(selectedCandidate || '');
+  
+  // Query para buscar assessments do candidato selecionado para performance
+  const { data: performanceCandidateAssessments } = useCandidateAssessments(selectedCandidateForPerformance || '');
 
   // Query para buscar todas as respostas dos assessments
   const { data: allAnswers, isLoading: loadingAnswers } = useQuery({
@@ -71,8 +74,8 @@ export default function AdminDashboard() {
   // Filtrar por candidato se selecionado
   const filteredAnswers = selectedCandidateForPerformance && allAnswers
     ? allAnswers.filter(a => {
-        // Buscar assessment_id do candidato
-        const candidateAssessmentIds = candidateAssessments?.map(ca => ca.id) || [];
+        // Buscar assessment_id do candidato selecionado para performance
+        const candidateAssessmentIds = performanceCandidateAssessments?.map(ca => ca.id) || [];
         return candidateAssessmentIds.includes(a.assessment_id);
       })
     : allAnswers || [];
