@@ -327,54 +327,27 @@ export class AssessmentService {
     
     console.log('🔧 DEBUG - Assessment encontrado:', assessment);
     
-    // Buscar todas as respostas
+    // Buscar todas as respostas (query simples - tabela questions não existe)
     const { data, error } = await supabase
       .from('assessment_answers')
-      .select(`
-        *,
-        questions (
-          id,
-          question_text,
-          subject_id,
-          subjects (
-            name
-          )
-        )
-      `)
+      .select('*')
       .eq('assessment_id', assessmentId)
       .order('question_number', { ascending: true });
 
     if (error) {
       console.error('❌ Erro ao buscar respostas do assessment:', error);
-      
-      // Fallback: tentar query simples
-      const { data: simpleData, error: simpleError } = await supabase
-        .from('assessment_answers')
-        .select('*')
-        .eq('assessment_id', assessmentId)
-        .order('question_number', { ascending: true });
-        
-      if (simpleError) {
-        throw new Error(`Erro ao buscar respostas: ${simpleError.message}`);
-      }
-      
-      console.log('🔧 DEBUG - Fallback - Respostas encontradas:', simpleData?.length || 0);
-      
-      return simpleData?.map(answer => ({
-        ...answer,
-        subject_name: 'Competências Gerais',
-        question_text: `Questão ${answer.question_number}`
-      })) || [];
+      throw new Error(`Erro ao buscar respostas: ${error.message}`);
     }
 
     console.log('🔧 DEBUG - Respostas encontradas:', data?.length || 0);
     console.log('🔧 DEBUG - Primeira resposta:', data?.[0]);
+    console.log('🔧 DEBUG - Todas as respostas:', data);
     
-    // Mapear com dados das questões
+    // Mapear respostas com dados básicos
     return data?.map(answer => ({
       ...answer,
-      subject_name: answer.questions?.subjects?.name || 'Competências Gerais',
-      question_text: answer.questions?.question_text || `Questão ${answer.question_number}`
+      subject_name: 'Competências Gerais',
+      question_text: answer.question_text || `Questão ${answer.question_number}`
     })) || [];
   }
 
@@ -450,20 +423,26 @@ export class AssessmentService {
         // Verificar e corrigir status das avaliações se necessário
         // (será feito via SQL separadamente)
 
-        // Buscar estatísticas com consultas mais específicas
-        const [candidatesResult, assessmentsResult, completedResult, questionsResult] = await Promise.all([
+        // Buscar estatísticas com consultas mais específicas (sem tabela questions)
+        const [candidatesResult, assessmentsResult, completedResult] = await Promise.all([
           supabase.from('candidates').select('id', { count: 'exact', head: true }),
           supabase.from('assessments').select('id', { count: 'exact', head: true }),
           supabase.from('assessments').select('id', { count: 'exact', head: true })
-            .not('completed_at', 'is', null), // Tem completed_at
-          supabase.from('questions').select('id', { count: 'exact', head: true })
-            .eq('is_active', true) // Apenas questões ativas
+            .not('completed_at', 'is', null) // Tem completed_at
         ]);
 
         const totalCandidates = candidatesResult.count || 0;
         const totalAssessments = assessmentsResult.count || 0;
         const completedCount = completedResult.count || 0;
-        const totalQuestions = questionsResult.count || 0;
+        
+        // Contar questões únicas nas respostas (aproximação)
+        const { data: uniqueQuestions } = await supabase
+          .from('assessment_answers')
+          .select('question_number')
+          .order('question_number');
+        
+        const totalQuestions = uniqueQuestions ? 
+          new Set(uniqueQuestions.map(q => q.question_number)).size : 0;
         
         // Calcular taxa de conclusão
         const completionRate = totalAssessments > 0 ? 
