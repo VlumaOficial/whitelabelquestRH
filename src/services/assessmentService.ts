@@ -411,16 +411,19 @@ export class AssessmentService {
         // (será feito via SQL separadamente)
 
         // Buscar estatísticas com consultas mais específicas
-        const [candidatesResult, assessmentsResult, completedResult] = await Promise.all([
+        const [candidatesResult, assessmentsResult, completedResult, questionsResult] = await Promise.all([
           supabase.from('candidates').select('id', { count: 'exact', head: true }),
           supabase.from('assessments').select('id', { count: 'exact', head: true }),
           supabase.from('assessments').select('id', { count: 'exact', head: true })
-            .not('completed_at', 'is', null) // Tem completed_at
+            .not('completed_at', 'is', null), // Tem completed_at
+          supabase.from('questions').select('id', { count: 'exact', head: true })
+            .eq('is_active', true) // Apenas questões ativas
         ]);
 
         const totalCandidates = candidatesResult.count || 0;
         const totalAssessments = assessmentsResult.count || 0;
         const completedCount = completedResult.count || 0;
+        const totalQuestions = questionsResult.count || 0;
         
         // Calcular taxa de conclusão
         const completionRate = totalAssessments > 0 ? 
@@ -430,14 +433,16 @@ export class AssessmentService {
           totalCandidates,
           totalAssessments, 
           completedCount,
-          completionRate
+          completionRate,
+          totalQuestions
         });
 
         return {
           total_candidates: totalCandidates,
           total_assessments: totalAssessments,
           completed_assessments: completedCount,
-          completion_rate: completionRate
+          completion_rate: completionRate,
+          total_questions: totalQuestions
         };
       } catch (error) {
         console.error('❌ Erro ao buscar estatísticas:', error);
