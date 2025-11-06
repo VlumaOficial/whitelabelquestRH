@@ -51,18 +51,28 @@ export default function AssessmentAnswersModal({ assessmentId, onClose }: Assess
                   <CardContent>
                     <div className="space-y-4">
                       {subjectAnswers?.map((answer, index) => (
-                        <div key={answer.id} className={`border-l-4 pl-4 ${answer.is_correct ? 'border-l-green-500' : 'border-l-red-500'}`}>
+                        <div key={answer.id} className={`border-l-4 pl-4 ${
+                          answer.is_personal_data 
+                            ? 'border-l-blue-500 bg-blue-50/50' 
+                            : answer.is_correct 
+                              ? 'border-l-green-500' 
+                              : 'border-l-red-500'
+                        }`}>
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-muted-foreground">
-                                Questão {answer.question_number}
+                                {answer.is_personal_data ? '📝' : 'Questão'} {answer.question_number}
                               </span>
-                              {answer.is_correct ? (
+                              {answer.is_personal_data ? (
+                                <Badge variant="secondary" className="text-xs">
+                                  Dados Pessoais
+                                </Badge>
+                              ) : answer.is_correct ? (
                                 <CheckCircle className="w-4 h-4 text-green-600" />
                               ) : (
                                 <XCircle className="w-4 h-4 text-red-600" />
                               )}
-                              {answer.time_spent_seconds && (
+                              {answer.time_spent_seconds > 0 && (
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                   <Clock className="w-3 h-3" />
                                   {answer.time_spent_seconds}s

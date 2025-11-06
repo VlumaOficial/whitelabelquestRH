@@ -327,8 +327,12 @@ export class AssessmentService {
     
     console.log('🔧 DEBUG - Assessment encontrado:', assessment);
     
-    // Buscar todas as respostas (query simples - JOIN com subjects causa erro 400)
-    const { data, error } = await supabase
+    if (!assessment) {
+      throw new Error('Assessment não encontrado');
+    }
+    
+    // Buscar todas as respostas do questionário
+    const { data: answers, error } = await supabase
       .from('assessment_answers')
       .select('*')
       .eq('assessment_id', assessmentId)
@@ -339,15 +343,164 @@ export class AssessmentService {
       throw new Error(`Erro ao buscar respostas: ${error.message}`);
     }
 
-    console.log('🔧 DEBUG - Respostas encontradas:', data?.length || 0);
-    console.log('🔧 DEBUG - Primeira resposta:', data?.[0]);
+    console.log('🔧 DEBUG - Respostas do questionário encontradas:', answers?.length || 0);
     
-    // Mapear respostas com dados básicos
-    return data?.map(answer => ({
+    // Buscar dados pessoais do candidato
+    const { data: candidate, error: candidateError } = await supabase
+      .from('candidates')
+      .select(`
+        personal_presentation,
+        additional_skills,
+        highlighted_soft_skills,
+        relevant_experiences,
+        professional_goals,
+        linkedin_url,
+        portfolio_url,
+        github_url,
+        behance_url,
+        instagram_url
+      `)
+      .eq('id', assessment.candidate_id)
+      .single();
+
+    if (candidateError) {
+      console.warn('⚠️ Erro ao buscar dados pessoais:', candidateError);
+    }
+
+    console.log('🔧 DEBUG - Dados pessoais encontrados:', candidate ? 'Sim' : 'Não');
+    
+    // Mapear respostas do questionário
+    const questionnaireAnswers = answers?.map(answer => ({
       ...answer,
-      subject_name: 'Competências Gerais',
-      question_text: answer.question_text || `Questão ${answer.question_number}`
+      subject_name: 'Competências Técnicas',
+      question_text: answer.question_text || `Questão ${answer.question_number}`,
+      is_personal_data: false
     })) || [];
+
+    // Adicionar dados pessoais como "questões" especiais
+    const personalDataAnswers = [];
+    let personalQuestionNumber = (answers?.length || 0) + 1;
+
+    if (candidate) {
+      if (candidate.personal_presentation) {
+        personalDataAnswers.push({
+          id: `personal_${personalQuestionNumber}`,
+          assessment_id: assessmentId,
+          subject_id: 'personal',
+          question_number: personalQuestionNumber++,
+          question_text: 'Apresentação Pessoal',
+          answer_value: candidate.personal_presentation,
+          answer_score: 5,
+          is_correct: true,
+          time_spent_seconds: 0,
+          subject_name: 'Dados Pessoais',
+          is_personal_data: true,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      if (candidate.additional_skills) {
+        personalDataAnswers.push({
+          id: `personal_${personalQuestionNumber}`,
+          assessment_id: assessmentId,
+          subject_id: 'personal',
+          question_number: personalQuestionNumber++,
+          question_text: 'Habilidades Adicionais',
+          answer_value: candidate.additional_skills,
+          answer_score: 5,
+          is_correct: true,
+          time_spent_seconds: 0,
+          subject_name: 'Dados Pessoais',
+          is_personal_data: true,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      if (candidate.highlighted_soft_skills) {
+        personalDataAnswers.push({
+          id: `personal_${personalQuestionNumber}`,
+          assessment_id: assessmentId,
+          subject_id: 'personal',
+          question_number: personalQuestionNumber++,
+          question_text: 'Soft Skills em Destaque',
+          answer_value: candidate.highlighted_soft_skills,
+          answer_score: 5,
+          is_correct: true,
+          time_spent_seconds: 0,
+          subject_name: 'Dados Pessoais',
+          is_personal_data: true,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      if (candidate.relevant_experiences) {
+        personalDataAnswers.push({
+          id: `personal_${personalQuestionNumber}`,
+          assessment_id: assessmentId,
+          subject_id: 'personal',
+          question_number: personalQuestionNumber++,
+          question_text: 'Experiências Relevantes',
+          answer_value: candidate.relevant_experiences,
+          answer_score: 5,
+          is_correct: true,
+          time_spent_seconds: 0,
+          subject_name: 'Dados Pessoais',
+          is_personal_data: true,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      if (candidate.professional_goals) {
+        personalDataAnswers.push({
+          id: `personal_${personalQuestionNumber}`,
+          assessment_id: assessmentId,
+          subject_id: 'personal',
+          question_number: personalQuestionNumber++,
+          question_text: 'Objetivos Profissionais',
+          answer_value: candidate.professional_goals,
+          answer_score: 5,
+          is_correct: true,
+          time_spent_seconds: 0,
+          subject_name: 'Dados Pessoais',
+          is_personal_data: true,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      // URLs profissionais
+      const urls = [
+        { field: candidate.linkedin_url, label: 'LinkedIn' },
+        { field: candidate.portfolio_url, label: 'Portfólio' },
+        { field: candidate.github_url, label: 'GitHub' },
+        { field: candidate.behance_url, label: 'Behance/Dribbble' },
+        { field: candidate.instagram_url, label: 'Instagram' }
+      ];
+
+      urls.forEach(({ field, label }) => {
+        if (field) {
+          personalDataAnswers.push({
+            id: `personal_${personalQuestionNumber}`,
+            assessment_id: assessmentId,
+            subject_id: 'personal',
+            question_number: personalQuestionNumber++,
+            question_text: `URL ${label}`,
+            answer_value: field,
+            answer_score: 5,
+            is_correct: true,
+            time_spent_seconds: 0,
+            subject_name: 'Links Profissionais',
+            is_personal_data: true,
+            created_at: new Date().toISOString()
+          });
+        }
+      });
+    }
+
+    console.log('🔧 DEBUG - Dados pessoais adicionados:', personalDataAnswers.length);
+    console.log('🔧 DEBUG - Total final:', questionnaireAnswers.length + personalDataAnswers.length);
+
+    // Combinar respostas do questionário + dados pessoais
+    return [...questionnaireAnswers, ...personalDataAnswers];
   }
 
   /**
