@@ -368,28 +368,43 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
       const answers: QuestionnaireAnswer[] = [];
       let questionNumber = 1;
 
-      // Mapear cada seção do questionário para respostas
-      Object.entries(data).forEach(([sectionKey, sectionData]) => {
-        if (typeof sectionData === 'object' && sectionData !== null) {
-          Object.entries(sectionData).forEach(([questionKey, answer]) => {
-            // Encontrar a matéria correspondente (mapear seções para matérias)
-            const subjectName = mapSectionToSubject(sectionKey);
-            const subject = subjects?.find(s => s.name === subjectName);
+      // Função recursiva para processar todos os níveis da estrutura
+      const processSection = (data: any, sectionPath: string[] = []) => {
+        if (typeof data === 'object' && data !== null) {
+          Object.entries(data).forEach(([key, value]) => {
+            const currentPath = [...sectionPath, key];
             
-            if (subject && answer !== undefined) {
-              answers.push({
-                subject_id: subject.id,
-                question_number: questionNumber++,
-                question_text: `${sectionKey}: ${questionKey}`,
-                answer_value: String(answer),
-                answer_score: typeof answer === 'number' ? answer : 0,
-                is_correct: typeof answer === 'number' ? answer > 0 : true,
-                time_spent_seconds: 30 // Estimativa
-              });
+            if (typeof value === 'number') {
+              // É uma resposta final (número de 1-5)
+              const sectionKey = sectionPath[0] || 'unknown';
+              const subjectName = mapSectionToSubject(sectionKey);
+              const subject = subjects?.find(s => s.name === subjectName);
+              
+              if (subject) {
+                answers.push({
+                  subject_id: subject.id,
+                  question_number: questionNumber++,
+                  question_text: currentPath.join(': '),
+                  answer_value: String(value),
+                  answer_score: value,
+                  is_correct: value > 0,
+                  time_spent_seconds: 30 // Estimativa
+                });
+              }
+            } else if (typeof value === 'object' && value !== null) {
+              // É um objeto, continuar recursivamente
+              processSection(value, currentPath);
             }
           });
         }
-      });
+      };
+
+      // Processar todas as seções recursivamente
+      processSection(data);
+
+      console.log('🚨 DEBUG - Total de questões processadas:', answers.length);
+      console.log('🚨 DEBUG - Primeiras 5 questões:', answers.slice(0, 5));
+      console.log('🚨 DEBUG - Últimas 5 questões:', answers.slice(-5));
 
       // 3. Submeter avaliação
       const assessmentData: AssessmentSubmission = {
