@@ -1,7 +1,11 @@
 import { Heart, Users, Mail, Github, Twitter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import TermsModal from "@/components/TermsModal";
 
 export function Footer() {
+  const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
+
   return (
     <footer className="bg-muted/30 border-t border-border/50 mt-20">
       <div className="container mx-auto px-4 py-12">
@@ -27,9 +31,12 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-semibold">Plataforma</h3>
             <div className="space-y-2 text-sm">
-              <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">
+              <button
+                onClick={() => setShowHowItWorksModal(true)}
+                className="block text-muted-foreground hover:text-foreground transition-colors text-left"
+              >
                 Como funciona
-              </a>
+              </button>
               <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">
                 Acessibilidade
               </a>
@@ -97,6 +104,13 @@ export function Footer() {
           </div>
         </div>
       </div>
+
+      {/* Modal Como Funciona */}
+      <TermsModal
+        isOpen={showHowItWorksModal}
+        onClose={() => setShowHowItWorksModal(false)}
+        type="how-it-works"
+      />
     </footer>
   );
 }

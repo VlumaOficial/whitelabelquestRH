@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 interface TermsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'privacy' | 'terms';
+  type: 'privacy' | 'terms' | 'how-it-works';
 }
 
 const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, type }) => {
@@ -15,7 +15,13 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, type }) => {
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      const filename = type === 'privacy' ? 'politica-de-privacidade.md' : 'termos-de-uso.md';
+      let filename = 'termos-de-uso.md';
+      
+      if (type === 'privacy') {
+        filename = 'politica-de-privacidade.md';
+      } else if (type === 'how-it-works') {
+        filename = 'como-funciona.md';
+      }
       
       fetch(`/${filename}`)
         .then(response => response.text())
@@ -31,7 +37,18 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, type }) => {
     }
   }, [isOpen, type]);
 
-  const title = type === 'privacy' ? 'Política de Privacidade' : 'Termos de Uso';
+  const getTitle = () => {
+    switch (type) {
+      case 'privacy':
+        return 'Política de Privacidade';
+      case 'how-it-works':
+        return 'Como Funciona';
+      default:
+        return 'Termos de Uso';
+    }
+  };
+
+  const title = getTitle();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
