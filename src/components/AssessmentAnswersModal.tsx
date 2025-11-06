@@ -66,24 +66,23 @@ export default function AssessmentAnswersModal({ assessmentId, onClose }: Assess
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                   <Clock className="w-3 h-3" />
                                   {answer.time_spent_seconds}s
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-sm mb-2">{answer.question_text}</p>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">Resposta:</span>
-                                <Badge 
-                                  variant={answer.is_correct ? "default" : "destructive"}
-                                  className="text-xs"
-                                >
-                                  {answer.answer_value}
-                                </Badge>
-                                {answer.answer_score && (
-                                  <span className="text-xs text-muted-foreground">
-                                    ({answer.answer_score} pontos)
-                                  </span>
-                                )}
-                              </div>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-sm mb-2">{answer.question_text}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Resposta:</span>
+                              <Badge 
+                                variant={answer.is_correct ? "default" : "destructive"}
+                                className="text-xs"
+                              >
+                                {answer.answer_value}
+                              </Badge>
+                              {answer.answer_score && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({answer.answer_score} pontos)
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
