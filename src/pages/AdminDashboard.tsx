@@ -171,38 +171,42 @@ export default function AdminDashboard() {
       // Limpar seleção ANTES de invalidar queries
       setSelectedCandidateForPerformance(null);
       
-      // Resetar completamente o cache das queries principais
-      queryClient.resetQueries({ queryKey: ['all-candidates'] });
-      queryClient.resetQueries({ queryKey: ['system-stats'] });
-      queryClient.resetQueries({ queryKey: ['all-assessment-answers'] });
+      // REMOVER completamente do cache (não apenas invalidar)
+      queryClient.removeQueries({ queryKey: ['candidates'] });
+      queryClient.removeQueries({ queryKey: ['system-stats'] });
+      queryClient.removeQueries({ queryKey: ['all-assessment-answers'] });
+      queryClient.removeQueries({ queryKey: ['subject-performance'] });
       
-      // Aguardar um momento para garantir que o reset foi processado
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('Cache limpo, forçando refetch...');
       
-      // Forçar refetch imediato com exact match
-      await queryClient.refetchQueries({ 
-        queryKey: ['all-candidates'],
-        exact: true,
-        type: 'active'
+      // Aguardar para garantir que remoção foi processada
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Invalidar com refetch forçado
+      await queryClient.invalidateQueries({ 
+        queryKey: ['candidates'], 
+        refetchType: 'active'
       });
       
-      await queryClient.refetchQueries({ 
+      await queryClient.invalidateQueries({ 
         queryKey: ['system-stats'],
-        exact: true,
-        type: 'active'
+        refetchType: 'active'
       });
       
-      await queryClient.refetchQueries({ 
+      await queryClient.invalidateQueries({ 
         queryKey: ['all-assessment-answers'],
-        exact: true,
-        type: 'active'
+        refetchType: 'active'
       });
       
-      console.log('Refresh concluído!');
+      console.log('Refetch concluído! Dados atualizados.');
       
       toast.success('Candidato deletado com sucesso!', {
         description: `${candidate.full_name} e todos os dados relacionados foram removidos.`
       });
+      
+      // Forçar re-render do componente
+      window.dispatchEvent(new Event('storage'));
+      
     } catch (error: any) {
       console.error('Erro ao deletar candidato:', error);
       toast.error('Erro ao deletar candidato', {
