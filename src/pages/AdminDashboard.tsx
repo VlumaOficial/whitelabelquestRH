@@ -166,16 +166,27 @@ export default function AdminDashboard() {
     try {
       await AssessmentService.deleteCandidate(selectedCandidateForPerformance);
       
-      // Invalidar queries para atualizar dados
-      queryClient.invalidateQueries({ queryKey: ['all-candidates'] });
-      queryClient.invalidateQueries({ queryKey: ['system-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['all-assessment-answers'] });
-      
-      // Limpar seleção
+      // Limpar seleção ANTES de invalidar queries
       setSelectedCandidateForPerformance(null);
       
+      // Invalidar e refetch TODAS as queries relacionadas
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['all-candidates'] }),
+        queryClient.invalidateQueries({ queryKey: ['system-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['all-assessment-answers'] }),
+        queryClient.invalidateQueries({ queryKey: ['subject-performance'] }),
+        queryClient.invalidateQueries({ queryKey: ['candidate-assessments'] }),
+      ]);
+      
+      // Forçar refetch imediato
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['all-candidates'] }),
+        queryClient.refetchQueries({ queryKey: ['system-stats'] }),
+        queryClient.refetchQueries({ queryKey: ['all-assessment-answers'] }),
+      ]);
+      
       toast.success('Candidato deletado com sucesso!', {
-        description: `${candidate.full_name} e todos os dados relacionados foram removidos.`
+        description: `${candidate.full_name} e todos os dados relacionados foram removidos. Página atualizada.`
       });
     } catch (error: any) {
       console.error('Erro ao deletar candidato:', error);
