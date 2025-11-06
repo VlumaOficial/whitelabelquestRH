@@ -13,6 +13,12 @@ export interface Candidate {
   preferred_language: string;
   consent_data_processing: boolean;
   consent_marketing: boolean;
+  // Campos de aceite de termos
+  terms_accepted: boolean;
+  terms_accepted_at?: string;
+  privacy_policy_accepted: boolean;
+  privacy_policy_accepted_at?: string;
+  terms_acceptance_ip?: string;
   // Campos de apresentação pessoal
   personal_presentation?: string;
   additional_skills?: string;
@@ -119,8 +125,8 @@ export interface AssessmentDetailedReport {
 
 // Tipos para formulários
 export interface CandidateFormData {
-  email: string;
   full_name: string;
+  email: string;
   phone?: string;
   birth_date?: string;
   gender?: string;
@@ -130,6 +136,11 @@ export interface CandidateFormData {
   preferred_language?: string;
   consent_data_processing: boolean;
   consent_marketing: boolean;
+  terms_accepted: boolean;
+  privacy_policy_accepted: boolean;
+  terms_accepted_at?: string;
+  privacy_policy_accepted_at?: string;
+  terms_acceptance_ip?: string;
 }
 
 export interface PersonalPresentationData {

@@ -49,6 +49,7 @@ interface MultiStepQuestionnaireProps {
     phone: string;
     areaOfExpertise: string;
     yearsOfExperience: number;
+    termsAccepted?: boolean;
   };
   onBack?: () => void;
   onSuccess?: (candidateId: string) => void;
@@ -359,7 +360,9 @@ const MultiStepQuestionnaire: React.FC<MultiStepQuestionnaireProps> = ({ candida
         education_level: candidateInfo.areaOfExpertise,
         experience_years: candidateInfo.yearsOfExperience,
         consent_data_processing: true,
-        consent_marketing: false
+        consent_marketing: false,
+        terms_accepted: candidateInfo.termsAccepted || false,
+        privacy_policy_accepted: candidateInfo.termsAccepted || false
       };
 
       const candidate = await createCandidate.mutateAsync(candidateData);

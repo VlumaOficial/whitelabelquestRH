@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -11,10 +12,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
+import TermsModal from "@/components/TermsModal";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -32,6 +36,9 @@ const formSchema = z.object({
   yearsOfExperience: z.coerce.number().min(0, {
     message: "O tempo de experiência deve ser um número positivo.",
   }),
+  termsAccepted: z.boolean().refine(val => val === true, {
+    message: "Você deve aceitar os Termos de Uso e a Política de Privacidade para continuar.",
+  }),
 });
 
 type CandidateFormData = z.infer<typeof formSchema>;
@@ -41,6 +48,9 @@ interface CandidateFormProps {
 }
 
 const CandidateForm: React.FC<CandidateFormProps> = ({ onFormSubmitSuccess }) => {
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
   const form = useForm<CandidateFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,6 +59,7 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onFormSubmitSuccess }) =>
       phone: "",
       areaOfExpertise: "",
       yearsOfExperience: 0,
+      termsAccepted: false,
     },
   });
 
@@ -157,13 +168,75 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onFormSubmitSuccess }) =>
                 </ul>
               </div>
 
-              <Button type="submit" className="w-full bg-inclusive-orange text-inclusive-orange-foreground hover:bg-inclusive-orange/90">
+              {/* Aceite de Termos e Política de Privacidade */}
+              <FormField
+                control={form.control}
+                name="termsAccepted"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/50">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm font-normal">
+                        Li e concordo com os{" "}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowTermsModal(true);
+                          }}
+                          className="text-inclusive-blue hover:text-inclusive-purple underline font-medium"
+                        >
+                          Termos de Uso
+                        </button>
+                        {" "}e a{" "}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowPrivacyModal(true);
+                          }}
+                          className="text-inclusive-blue hover:text-inclusive-purple underline font-medium"
+                        >
+                          Política de Privacidade
+                        </button>
+                      </FormLabel>
+                      <FormDescription className="text-xs">
+                        É necessário aceitar os termos para continuar
+                      </FormDescription>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Button 
+                type="submit" 
+                className="w-full bg-inclusive-orange text-inclusive-orange-foreground hover:bg-inclusive-orange/90"
+                disabled={!form.watch('termsAccepted')}
+              >
                 Continuar para o Questionário de Habilidades
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
+
+      {/* Modais de Termos */}
+      <TermsModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        type="privacy"
+      />
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        type="terms"
+      />
     </div>
   );
 };

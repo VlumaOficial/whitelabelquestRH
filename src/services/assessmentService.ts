@@ -54,14 +54,22 @@ export class AssessmentService {
    * Criar novo candidato ou buscar existente
    */
   static async createCandidate(candidateData: CandidateFormData): Promise<Candidate> {
+    // Adicionar timestamps de aceite de termos
+    const now = new Date().toISOString();
+    const dataWithTimestamps = {
+      ...candidateData,
+      terms_accepted_at: candidateData.terms_accepted ? now : null,
+      privacy_policy_accepted_at: candidateData.privacy_policy_accepted ? now : null,
+    };
+
     // Primeiro, tentar buscar candidato existente pelo email
     const existingCandidate = await this.getCandidateByEmail(candidateData.email);
     
     if (existingCandidate) {
-      // Se já existe, atualizar os dados e retornar
+      // Se já existe, atualizar os dados (incluindo novo aceite de termos se aplicável)
       const { data: updatedCandidate, error: updateError } = await supabase
         .from('candidates')
-        .update(candidateData)
+        .update(dataWithTimestamps)
         .eq('id', existingCandidate.id)
         .select();
 
@@ -76,7 +84,7 @@ export class AssessmentService {
     // Se não existe, criar novo
     const { data, error } = await supabase
       .from('candidates')
-      .insert([candidateData])
+      .insert([dataWithTimestamps])
       .select()
       .single();
 
