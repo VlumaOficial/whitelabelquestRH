@@ -90,6 +90,14 @@ export function useCandidateAssessments(candidateId: string) {
   });
 }
 
+export function useAssessmentAnswers(assessmentId: string) {
+  return useQuery({
+    queryKey: ['assessment', 'answers', assessmentId],
+    queryFn: () => AssessmentService.getAssessmentAnswers(assessmentId),
+    enabled: !!assessmentId,
+  });
+}
+
 // ============================================
 // HOOKS PARA RELATÓRIOS (ADMIN)
 // ============================================

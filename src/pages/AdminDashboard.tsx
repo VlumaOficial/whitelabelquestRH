@@ -30,9 +30,11 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import AssessmentAnswersModal from "@/components/AssessmentAnswersModal";
 
 export default function AdminDashboard() {
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
+  const [selectedAssessment, setSelectedAssessment] = useState<string | null>(null);
   
   // Queries
   const { data: candidates, isLoading: loadingCandidates } = useAllCandidates();
@@ -516,10 +518,10 @@ export default function AdminDashboard() {
                   <CardContent className="pt-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
-                        {selectedCandidateData.avg_score ? selectedCandidateData.avg_score.toFixed(1) : '0'}%
+                        Nível {selectedCandidateData.avg_score ? getClassification(selectedCandidateData.avg_score).level : '0'}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Pontuação Média
+                        {selectedCandidateData.avg_score ? getClassification(selectedCandidateData.avg_score).label : 'Sem classificação'}
                       </div>
                     </div>
                   </CardContent>
@@ -561,9 +563,19 @@ export default function AdminDashboard() {
                               {assessment.status === 'completed' ? 'Completa' : 'Em Andamento'}
                             </Badge>
                             {assessment.percentage_score && (
-                              <Badge className={getScoreColor(assessment.percentage_score)}>
-                                {assessment.percentage_score.toFixed(1)}%
+                              <Badge className={getClassification(assessment.percentage_score).color}>
+                                Nível {getClassification(assessment.percentage_score).level}
                               </Badge>
+                            )}
+                            {assessment.status === 'completed' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedAssessment(assessment.id)}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Ver Respostas
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -580,6 +592,12 @@ export default function AdminDashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Visualização de Respostas */}
+      <AssessmentAnswersModal 
+        assessmentId={selectedAssessment}
+        onClose={() => setSelectedAssessment(null)}
+      />
 
       <Footer />
     </div>

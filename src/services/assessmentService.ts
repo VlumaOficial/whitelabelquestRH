@@ -305,17 +305,40 @@ export class AssessmentService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Erro ao buscar avaliações:', error);
+      console.error('Erro ao buscar avaliações do candidato:', error);
       throw new Error(`Erro ao buscar avaliações: ${error.message}`);
     }
 
     return data || [];
   }
 
-  // ============================================
-  // RELATÓRIOS ADMINISTRATIVOS
-  // ============================================
-  
+  /**
+   * Buscar respostas de um assessment específico
+   */
+  static async getAssessmentAnswers(assessmentId: string) {
+    const { data, error } = await supabase
+      .from('assessment_answers')
+      .select(`
+        *,
+        subjects:subject_id (
+          name
+        )
+      `)
+      .eq('assessment_id', assessmentId)
+      .order('question_number', { ascending: true });
+
+    if (error) {
+      console.error('Erro ao buscar respostas do assessment:', error);
+      throw new Error(`Erro ao buscar respostas: ${error.message}`);
+    }
+
+    // Mapear para incluir o nome da matéria
+    return data?.map(answer => ({
+      ...answer,
+      subject_name: answer.subjects?.name || 'Geral'
+    })) || [];
+  }
+
   /**
    * Relatório detalhado de uma avaliação específica
    */
