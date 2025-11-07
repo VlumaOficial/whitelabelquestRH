@@ -3,8 +3,14 @@
 -- Execute este script no Supabase SQL Editor
 -- ============================================
 
--- 1. Criar tabela de usuários admin
-CREATE TABLE IF NOT EXISTS admin_users (
+-- 0. Habilitar extensão pgcrypto (necessária para crypt)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 1. Dropar tabela se existir (para recriar limpa)
+DROP TABLE IF EXISTS admin_users CASCADE;
+
+-- 2. Criar tabela de usuários admin
+CREATE TABLE admin_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
@@ -16,20 +22,20 @@ CREATE TABLE IF NOT EXISTS admin_users (
   is_active BOOLEAN DEFAULT true
 );
 
--- 2. Criar índices
-CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email);
-CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role);
-CREATE INDEX IF NOT EXISTS idx_admin_users_active ON admin_users(is_active);
+-- 3. Criar índices
+CREATE INDEX idx_admin_users_email ON admin_users(email);
+CREATE INDEX idx_admin_users_role ON admin_users(role);
+CREATE INDEX idx_admin_users_active ON admin_users(is_active);
 
--- 3. Habilitar RLS (Row Level Security)
+-- 4. Habilitar RLS (Row Level Security)
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 
--- 4. Criar políticas de segurança
--- Política para SELECT: apenas usuários autenticados podem ver
-CREATE POLICY "Admin users can view their own data"
+-- 5. Criar políticas de segurança
+-- Política para SELECT: permite visualização pública (necessário para login)
+CREATE POLICY "Allow public read for login"
   ON admin_users
   FOR SELECT
-  USING (auth.uid()::text = id::text OR is_active = true);
+  USING (true);
 
 -- Política para UPDATE: apenas o próprio usuário pode atualizar
 CREATE POLICY "Admin users can update their own data"
@@ -37,7 +43,7 @@ CREATE POLICY "Admin users can update their own data"
   FOR UPDATE
   USING (auth.uid()::text = id::text);
 
--- 5. Criar função para verificar login
+-- 6. Criar função para verificar login
 CREATE OR REPLACE FUNCTION verify_admin_login(
   p_email TEXT,
   p_password TEXT
@@ -71,7 +77,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 6. Criar função para criar usuário admin (com hash de senha)
+-- 7. Criar função para criar usuário admin (com hash de senha)
 CREATE OR REPLACE FUNCTION create_admin_user(
   p_email TEXT,
   p_password TEXT,
@@ -96,7 +102,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 7. Criar usuários padrão (ALTERE AS SENHAS!)
+-- 8. Criar usuários padrão (ALTERE AS SENHAS!)
 -- IMPORTANTE: Altere estas senhas antes de usar em produção!
 
 -- Usuário Admin
@@ -115,7 +121,7 @@ SELECT create_admin_user(
   'consulta'
 );
 
--- 8. Verificar usuários criados
+-- 9. Verificar usuários criados
 SELECT id, email, full_name, role, is_active, created_at 
 FROM admin_users 
 ORDER BY created_at DESC;
