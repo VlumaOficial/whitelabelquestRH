@@ -70,8 +70,8 @@ export default function Login() {
       localStorage.setItem('adminUser', JSON.stringify(user));
       localStorage.setItem('adminToken', user.id);
 
-      // Redirecionar direto para dashboard administrativo
-      navigate('/admin/dashboard');
+      // Redirecionar para portal administrativo profissional
+      navigate('/admin/portal');
     } catch (err) {
       console.error('Erro no login:', err);
       setError('Erro inesperado. Tente novamente.');

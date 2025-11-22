@@ -8,6 +8,7 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Assessment from "./pages/Assessment";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminPortal from "./pages/AdminPortal";
 import { AdminBranding } from "./pages/AdminBranding";
 import { AdminQuestionnaire } from "./pages/AdminQuestionnaire";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -26,6 +27,14 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/assessment" element={<Assessment />} />
+          <Route 
+            path="/admin/portal" 
+            element={
+              <ProtectedRoute>
+                <AdminPortal />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/admin/dashboard" 
             element={
