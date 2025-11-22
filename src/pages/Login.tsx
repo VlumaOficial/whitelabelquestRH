@@ -8,7 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useClientConfig } from '@/config/client';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { Mail, Lock, ArrowRight, Users } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,8 +21,8 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+    setIsLoading(true);
 
     // Validação básica
     if (!email || !password) {
@@ -37,14 +38,43 @@ export default function Login() {
     }
 
     try {
-      // Simular autenticação (aqui você integraria com seu sistema de auth)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirecionar para dashboard administrativo
-      // No futuro, aqui você faria a autenticação real com validação de perfil
+      // Chamar função do Supabase para verificar login admin
+      const { data, error: loginError } = await supabase
+        .rpc('verify_admin_login', {
+          p_email: email,
+          p_password: password
+        });
+
+      if (loginError) {
+        console.error('Erro ao fazer login:', loginError);
+        setError("Erro ao conectar com o servidor. Tente novamente.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setError("Email ou senha incorretos.");
+        setIsLoading(false);
+        return;
+      }
+
+      const user = data[0];
+
+      if (!user.is_active) {
+        setError("Usuário inativo. Entre em contato com o administrador.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Salvar dados do usuário no localStorage
+      localStorage.setItem('adminUser', JSON.stringify(user));
+      localStorage.setItem('adminToken', user.id);
+
+      // Redirecionar direto para dashboard administrativo
       navigate('/admin/dashboard');
     } catch (err) {
-      setError('Erro ao fazer login. Tente novamente.');
+      console.error('Erro no login:', err);
+      setError('Erro inesperado. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -59,29 +89,25 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8">
           {/* Logo e Título */}
           <div className="text-center">
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <img 
-                  src={config.company.logo} 
-                  alt={`${config.company.name} Logo`}
-                  className="w-16 h-16 rounded-xl object-contain"
-                />
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-600 via-blue-600 to-orange-500 rounded-xl flex items-center justify-center">
+                <Users className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-blue-600 to-orange-500 bg-clip-text text-transparent">
-              {config.company.name}
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Acesso ao Sistema {config.company.name}
             </h1>
-            <p className="text-muted-foreground mt-2">
-              {config.branding.tagline}
+            <p className="text-muted-foreground mb-8">
+              Entre com suas credenciais para acessar o painel administrativo
             </p>
           </div>
 
           {/* Card de Login */}
           <Card className="border-2">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Acesse sua conta</CardTitle>
+              <CardTitle className="text-2xl">Acesso Administrativo</CardTitle>
               <CardDescription>
-                Entre com suas credenciais para iniciar a avaliação de competências
+                Entre com suas credenciais para acessar o painel de controle
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

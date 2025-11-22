@@ -8,7 +8,6 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Assessment from "./pages/Assessment";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminLogin from "./pages/AdminLogin";
 import { AdminBranding } from "./pages/AdminBranding";
 import { AdminQuestionnaire } from "./pages/AdminQuestionnaire";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -27,7 +26,6 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/assessment" element={<Assessment />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
           <Route 
             path="/admin/dashboard" 
             element={
@@ -52,7 +50,8 @@ const App = () => (
               </ProtectedRoute>
             } 
           />
-          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin" element={<Login />} />
+          <Route path="/admin/login" element={<Login />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
